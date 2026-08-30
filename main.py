@@ -2,7 +2,6 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-
 app = FastAPI()
 
 
@@ -86,3 +85,41 @@ def create_task(task_data: TaskCreate):
     tasks.append(new_task)
 
     return new_task
+# Update a task
+@app.put("/tasks/{task_id}")
+def update_task(task_id: int, task_data: TaskCreate):
+    for task in tasks:
+        if task["id"] == task_id:
+            title = task_data.title.strip()
+
+            if not title:
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": "Title is required and cannot be empty"}
+                )
+
+            task["title"] = title
+
+            return task
+
+    return JSONResponse(
+        status_code=404,
+        content={"error": f"Task {task_id} not found"}
+    )
+
+
+# Delete a task
+@app.delete("/tasks/{task_id}")
+def delete_task(task_id: int):
+    for task in tasks:
+        if task["id"] == task_id:
+            tasks.remove(task)
+
+            return {
+                "message": f"Task {task_id} deleted successfully"
+            }
+
+    return JSONResponse(
+        status_code=404,
+        content={"error": f"Task {task_id} not found"}
+    )
