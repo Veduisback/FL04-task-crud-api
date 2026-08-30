@@ -109,15 +109,12 @@ def update_task(task_id: int, task_data: TaskCreate):
 
 
 # Delete a task
-@app.delete("/tasks/{task_id}")
+@app.delete("/tasks/{task_id}", status_code=204)
 def delete_task(task_id: int):
     for task in tasks:
         if task["id"] == task_id:
             tasks.remove(task)
-
-            return {
-                "message": f"Task {task_id} deleted successfully"
-            }
+            return
 
     return JSONResponse(
         status_code=404,
