@@ -2,7 +2,12 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-app = FastAPI()
+
+app = FastAPI(
+    title="Task API",
+    description="A simple in-memory CRUD API built with FastAPI.",
+    version="1.0"
+)
 
 
 # In-memory task storage
@@ -13,12 +18,12 @@ tasks = [
 ]
 
 
-# Request model for creating a task
+# Request model for creating and updating a task
 class TaskCreate(BaseModel):
     title: str
 
 
-# Convert FastAPI validation errors from 422 to the required 400
+# Convert FastAPI validation errors from 422 to 400
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(
     request: Request,
@@ -31,7 +36,11 @@ async def validation_exception_handler(
 
 
 # Root endpoint
-@app.get("/")
+@app.get(
+    "/",
+    summary="API information",
+    description="Returns basic information about the Task API."
+)
 def root():
     return {
         "name": "Task API",
@@ -41,19 +50,31 @@ def root():
 
 
 # Health check
-@app.get("/health")
+@app.get(
+    "/health",
+    summary="Health check",
+    description="Checks whether the API is running."
+)
 def health():
     return {"status": "ok"}
 
 
 # Get all tasks
-@app.get("/tasks")
+@app.get(
+    "/tasks",
+    summary="List all tasks",
+    description="Returns all tasks currently stored in memory."
+)
 def get_tasks():
     return tasks
 
 
 # Get one task
-@app.get("/tasks/{task_id}")
+@app.get(
+    "/tasks/{task_id}",
+    summary="Get a task",
+    description="Returns a single task by its ID."
+)
 def get_task(task_id: int):
     for task in tasks:
         if task["id"] == task_id:
@@ -66,7 +87,12 @@ def get_task(task_id: int):
 
 
 # Create a new task
-@app.post("/tasks", status_code=201)
+@app.post(
+    "/tasks",
+    status_code=201,
+    summary="Create a task",
+    description="Creates a new task. The title must not be empty."
+)
 def create_task(task_data: TaskCreate):
     title = task_data.title.strip()
 
@@ -85,8 +111,14 @@ def create_task(task_data: TaskCreate):
     tasks.append(new_task)
 
     return new_task
+
+
 # Update a task
-@app.put("/tasks/{task_id}")
+@app.put(
+    "/tasks/{task_id}",
+    summary="Update a task",
+    description="Updates the title of an existing task."
+)
 def update_task(task_id: int, task_data: TaskCreate):
     for task in tasks:
         if task["id"] == task_id:
@@ -109,7 +141,12 @@ def update_task(task_id: int, task_data: TaskCreate):
 
 
 # Delete a task
-@app.delete("/tasks/{task_id}", status_code=204)
+@app.delete(
+    "/tasks/{task_id}",
+    status_code=204,
+    summary="Delete a task",
+    description="Deletes an existing task. Returns 204 when successful."
+)
 def delete_task(task_id: int):
     for task in tasks:
         if task["id"] == task_id:
