@@ -4,6 +4,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from protected import router as protected_router
+from dependencies import get_current_user
+from fastapi import Depends
 app = FastAPI( 
     title="Task API",
     description="A simple in-memory CRUD API built with FastAPI.",
@@ -65,7 +67,7 @@ def health():
     summary="List all tasks",
     description="Returns all tasks currently stored in memory."
 )
-def get_tasks():
+def get_tasks(current_user=Depends(get_current_user)):
     return tasks
 
 
@@ -75,7 +77,7 @@ def get_tasks():
     summary="Get a task",
     description="Returns a single task by its ID."
 )
-def get_task(task_id: int):
+def get_task(task_id: int, current_user=Depends(get_current_user)):
     for task in tasks:
         if task["id"] == task_id:
             return task
@@ -93,7 +95,10 @@ def get_task(task_id: int):
     summary="Create a task",
     description="Creates a new task. The title must not be empty."
 )
-def create_task(task_data: TaskCreate):
+def create_task(
+    task_data: TaskCreate,
+    current_user=Depends(get_current_user)
+):
     title = task_data.title.strip()
 
     if not title:
@@ -119,7 +124,11 @@ def create_task(task_data: TaskCreate):
     summary="Update a task",
     description="Updates the title of an existing task."
 )
-def update_task(task_id: int, task_data: TaskCreate):
+def update_task(
+    task_id: int,
+    task_data: TaskCreate,
+    current_user=Depends(get_current_user)
+):
     for task in tasks:
         if task["id"] == task_id:
             title = task_data.title.strip()
@@ -147,7 +156,10 @@ def update_task(task_id: int, task_data: TaskCreate):
     summary="Delete a task",
     description="Deletes an existing task. Returns 204 when successful."
 )
-def delete_task(task_id: int):
+def delete_task(
+    task_id: int,
+    current_user=Depends(get_current_user)
+):
     for task in tasks:
         if task["id"] == task_id:
             tasks.remove(task)
