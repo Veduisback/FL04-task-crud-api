@@ -1,21 +1,20 @@
+from auth import router as auth_router
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-
-app = FastAPI(
+from protected import router as protected_router
+from dependencies import get_current_user
+from fastapi import Depends
+app = FastAPI( 
     title="Task API",
     description="A simple in-memory CRUD API built with FastAPI.",
     version="1.0"
 )
-
-
+app.include_router(auth_router)
+app.include_router(protected_router)
 # In-memory task storage
-tasks = [
-    {"id": 1, "title": "Learn FastAPI", "done": False},
-    {"id": 2, "title": "Build CRUD API", "done": False},
-    {"id": 3, "title": "Test with Swagger", "done": False},
-]
+tasks = []
 
 
 # Request model for creating and updating a task
@@ -31,9 +30,8 @@ async def validation_exception_handler(
 ):
     return JSONResponse(
         status_code=400,
-        content={"error": "Title is required"}
+        content={"error": "Invalid request data"}
     )
-
 
 # Root endpoint
 @app.get(
@@ -63,29 +61,32 @@ def health():
 @app.get(
     "/tasks",
     summary="List all tasks",
-    description="Returns all tasks currently stored in memory."
+    description="Returns all tasks belonging to the authenticated user."
 )
-def get_tasks():
-    return tasks
-
+def get_tasks(current_user=Depends(get_current_user)):
+    return [
+        task for task in tasks
+        if task["user_id"] == current_user.id
+    ]
 
 # Get one task
 @app.get(
     "/tasks/{task_id}",
     summary="Get a task",
-    description="Returns a single task by its ID."
+    description="Returns a single task belonging to the authenticated user."
 )
-def get_task(task_id: int):
+def get_task(
+    task_id: int,
+    current_user=Depends(get_current_user)
+):
     for task in tasks:
-        if task["id"] == task_id:
+        if task["id"] == task_id and task["user_id"] == current_user.id:
             return task
 
     return JSONResponse(
         status_code=404,
         content={"error": f"Task {task_id} not found"}
     )
-
-
 # Create a new task
 @app.post(
     "/tasks",
@@ -93,7 +94,10 @@ def get_task(task_id: int):
     summary="Create a task",
     description="Creates a new task. The title must not be empty."
 )
-def create_task(task_data: TaskCreate):
+def create_task(
+    task_data: TaskCreate,
+    current_user=Depends(get_current_user)
+):
     title = task_data.title.strip()
 
     if not title:
@@ -106,8 +110,8 @@ def create_task(task_data: TaskCreate):
         "id": max(task["id"] for task in tasks) + 1 if tasks else 1,
         "title": title,
         "done": False,
+        "user_id": current_user.id,
     }
-
     tasks.append(new_task)
 
     return new_task
@@ -119,9 +123,13 @@ def create_task(task_data: TaskCreate):
     summary="Update a task",
     description="Updates the title of an existing task."
 )
-def update_task(task_id: int, task_data: TaskCreate):
+def update_task(
+    task_id: int,
+    task_data: TaskCreate,
+    current_user=Depends(get_current_user)
+):
     for task in tasks:
-        if task["id"] == task_id:
+        if task["id"] == task_id and task["user_id"] == current_user.id:
             title = task_data.title.strip()
 
             if not title:
@@ -147,9 +155,12 @@ def update_task(task_id: int, task_data: TaskCreate):
     summary="Delete a task",
     description="Deletes an existing task. Returns 204 when successful."
 )
-def delete_task(task_id: int):
+def delete_task(
+    task_id: int,
+    current_user=Depends(get_current_user)
+):
     for task in tasks:
-        if task["id"] == task_id:
+        if task["id"] == task_id and task["user_id"] == current_user.id:
             tasks.remove(task)
             return
 
