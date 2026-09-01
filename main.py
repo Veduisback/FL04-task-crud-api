@@ -32,9 +32,8 @@ async def validation_exception_handler(
 ):
     return JSONResponse(
         status_code=400,
-        content={"error": "Title is required"}
+        content={"error": "Invalid request data"}
     )
-
 
 # Root endpoint
 @app.get(
