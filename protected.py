@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Header, HTTPException
 
 from supabase_client import supabase
+from fastapi import APIRouter, Depends
 
+from dependencies import get_current_user
 router = APIRouter(tags=["Protected"])
 
 
@@ -14,13 +16,13 @@ def public_info():
 
 
 @router.get("/protected/profile")
-def protected_profile(authorization: str | None = Header(default=None)):
-    if not authorization:
-        raise HTTPException(
-            status_code=401,
-            detail="Authorization header required"
-        )
-
+def protected_profile(current_user=Depends(get_current_user)):
+    return {
+        "message": "Protected profile",
+        "authenticated": True,
+        "user_id": current_user.id,
+        "email": current_user.email,
+    }
     if not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=401,

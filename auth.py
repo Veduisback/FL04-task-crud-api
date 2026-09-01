@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from supabase_client import supabase
-
+from fastapi import APIRouter, Depends, HTTPException
+from dependencies import get_current_user
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
@@ -66,4 +67,15 @@ def login(data: AuthRequest):
         raise HTTPException(
             status_code=401,
             detail="Invalid credentials"
+        )
+@router.post("/logout", status_code=204)
+def logout(current_user=Depends(get_current_user)):
+    try:
+        supabase.auth.sign_out()
+        return
+
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Logout failed"
         )
