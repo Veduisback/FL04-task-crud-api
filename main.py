@@ -14,11 +14,7 @@ app = FastAPI(
 app.include_router(auth_router)
 app.include_router(protected_router)
 # In-memory task storage
-tasks = [
-    {"id": 1, "title": "Learn FastAPI", "done": False},
-    {"id": 2, "title": "Build CRUD API", "done": False},
-    {"id": 3, "title": "Test with Swagger", "done": False},
-]
+tasks = []
 
 
 # Request model for creating and updating a task
@@ -65,29 +61,32 @@ def health():
 @app.get(
     "/tasks",
     summary="List all tasks",
-    description="Returns all tasks currently stored in memory."
+    description="Returns all tasks belonging to the authenticated user."
 )
 def get_tasks(current_user=Depends(get_current_user)):
-    return tasks
-
+    return [
+        task for task in tasks
+        if task["user_id"] == current_user.id
+    ]
 
 # Get one task
 @app.get(
     "/tasks/{task_id}",
     summary="Get a task",
-    description="Returns a single task by its ID."
+    description="Returns a single task belonging to the authenticated user."
 )
-def get_task(task_id: int, current_user=Depends(get_current_user)):
+def get_task(
+    task_id: int,
+    current_user=Depends(get_current_user)
+):
     for task in tasks:
-        if task["id"] == task_id:
+        if task["id"] == task_id and task["user_id"] == current_user.id:
             return task
 
     return JSONResponse(
         status_code=404,
         content={"error": f"Task {task_id} not found"}
     )
-
-
 # Create a new task
 @app.post(
     "/tasks",
@@ -111,8 +110,8 @@ def create_task(
         "id": max(task["id"] for task in tasks) + 1 if tasks else 1,
         "title": title,
         "done": False,
+        "user_id": current_user.id,
     }
-
     tasks.append(new_task)
 
     return new_task
@@ -130,7 +129,7 @@ def update_task(
     current_user=Depends(get_current_user)
 ):
     for task in tasks:
-        if task["id"] == task_id:
+        if task["id"] == task_id and task["user_id"] == current_user.id:
             title = task_data.title.strip()
 
             if not title:
@@ -161,7 +160,7 @@ def delete_task(
     current_user=Depends(get_current_user)
 ):
     for task in tasks:
-        if task["id"] == task_id:
+        if task["id"] == task_id and task["user_id"] == current_user.id:
             tasks.remove(task)
             return
 
