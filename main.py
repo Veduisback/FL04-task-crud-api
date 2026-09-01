@@ -3,14 +3,14 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-
+from protected import router as protected_router
 app = FastAPI( 
     title="Task API",
     description="A simple in-memory CRUD API built with FastAPI.",
     version="1.0"
 )
 app.include_router(auth_router)
-
+app.include_router(protected_router)
 # In-memory task storage
 tasks = [
     {"id": 1, "title": "Learn FastAPI", "done": False},
