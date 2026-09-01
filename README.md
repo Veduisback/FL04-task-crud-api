@@ -1,58 +1,89 @@
-# Task API
+# Task CRUD API with Supabase Authentication
 
-A simple **in-memory CRUD API** built with **Python, FastAPI, and Swagger UI**.
-
-This project was built stage-by-stage as part of the FlyRank AI backend/API assignment.
+A simple FastAPI Task CRUD API with Supabase authentication, JWT-protected endpoints, reusable authentication dependencies, and Swagger Bearer authentication.
 
 ## Features
 
-* Create tasks
-* Read all tasks
-* Read a single task
-* Update tasks
-* Delete tasks
-* Input validation
-* JSON error responses
-* Interactive Swagger UI
-* In-memory storage
-* RESTful HTTP status codes
+* User signup with Supabase Auth
+* User login with email and password
+* JWT access-token authentication
+* Reusable authentication dependency
+* Protected task CRUD endpoints
+* User-specific task ownership
+* Protected `/auth/logout` endpoint
+* Public and protected example endpoints
+* Swagger UI Bearer authentication
+* HTTP 401 responses for missing or invalid tokens
+* HTTP 400 validation responses
+* Environment variables for Supabase configuration
 
-> **Note:** Tasks are stored only in memory. Restarting the server resets the task list to the three default tasks.
+## Tech Stack
 
----
+* Python
+* FastAPI
+* Supabase
+* PyJWT
+* Uvicorn
 
-## Requirements
+## Project Structure
 
-* Python 3.10+
-* pip
+```text
+FL04-task-crud-api/
+├── auth.py
+├── dependencies.py
+├── main.py
+├── protected.py
+├── supabase_client.py
+├── .env.example
+├── .gitignore
+├── requirements.txt
+└── README.md
+```
 
----
+## Setup
 
-## Installation & Run
-
-Clone the repository and enter the project directory:
+### 1. Clone the repository
 
 ```bash
-git clone <YOUR_GITHUB_REPO_URL>
+git clone https://github.com/Veduisback/FL04-task-crud-api.git
 cd FL04-task-crud-api
 ```
 
-Create and activate a virtual environment:
+### 2. Create a virtual environment
 
-### Windows PowerShell
+Windows PowerShell:
 
 ```powershell
 python -m venv .venv
-.venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 ```
 
-Install dependencies:
+### 3. Install dependencies
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-Start the server:
+### 4. Configure environment variables
+
+Create a `.env` file from `.env.example`.
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Add your Supabase project credentials to `.env`.
+
+Example:
+
+```env
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_anon_key
+```
+
+**Never commit `.env` or real Supabase credentials to GitHub.**
+
+### 5. Start the API
 
 ```powershell
 uvicorn main:app --reload
@@ -64,110 +95,154 @@ The API will be available at:
 http://localhost:8000
 ```
 
-Swagger UI:
+Swagger documentation:
 
 ```text
 http://localhost:8000/docs
 ```
 
----
+## Authentication Flow
+
+### Signup
+
+```http
+POST /auth/signup
+```
+
+Request:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "your-password"
+}
+```
+
+### Login
+
+```http
+POST /auth/login
+```
+
+Request:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "your-password"
+}
+```
+
+A successful login returns a Bearer access token.
+
+Use the token in protected requests:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+### Logout
+
+```http
+POST /auth/logout
+```
+
+Requires a valid Bearer token and returns:
+
+```text
+204 No Content
+```
 
 ## API Endpoints
 
-| Method | Endpoint           | Description     | Success         |
-| ------ | ------------------ | --------------- | --------------- |
-| GET    | `/`                | API information | 200             |
-| GET    | `/health`          | Health check    | 200             |
-| GET    | `/tasks`           | List all tasks  | 200             |
-| GET    | `/tasks/{task_id}` | Get one task    | 200 / 404       |
-| POST   | `/tasks`           | Create a task   | 201             |
-| PUT    | `/tasks/{task_id}` | Update a task   | 200 / 400 / 404 |
-| DELETE | `/tasks/{task_id}` | Delete a task   | 204 / 404       |
+### Public
 
-### Validation
+| Method | Endpoint       | Description        |
+| ------ | -------------- | ------------------ |
+| GET    | `/`            | API information    |
+| GET    | `/health`      | Health check       |
+| GET    | `/public/info` | Public information |
 
-`POST` and `PUT` require a non-empty `title`.
+### Authentication
 
-Invalid requests return:
+| Method | Endpoint       | Authentication        |
+| ------ | -------------- | --------------------- |
+| POST   | `/auth/signup` | Not required          |
+| POST   | `/auth/login`  | Not required          |
+| POST   | `/auth/logout` | Bearer token required |
 
-```json
-{
-  "error": "Title is required and cannot be empty"
-}
-```
+### Protected
 
-Unknown task IDs return:
+| Method | Endpoint             | Authentication        |
+| ------ | -------------------- | --------------------- |
+| GET    | `/protected/profile` | Bearer token required |
+| GET    | `/tasks`             | Bearer token required |
+| GET    | `/tasks/{task_id}`   | Bearer token required |
+| POST   | `/tasks`             | Bearer token required |
+| PUT    | `/tasks/{task_id}`   | Bearer token required |
+| DELETE | `/tasks/{task_id}`   | Bearer token required |
 
-```json
-{
-  "error": "Task 999 not found"
-}
-```
-
----
-
-## Example Request
-
-Create a task:
-
-```bash
-curl -i -X POST http://localhost:8000/tasks \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Buy milk"}'
-```
-
-Example response:
-
-```text
-HTTP/1.1 201 Created
-content-type: application/json
-
-{"id":4,"title":"Buy milk","done":false}
-```
-
----
-
-## Swagger UI
-
-FastAPI automatically generates interactive OpenAPI documentation.
+## Swagger Authentication
 
 Open:
 
-`http://localhost:8000/docs`
-
-The Swagger UI can be used to execute the complete CRUD cycle without curl:
-
-1. Create a task
-2. List tasks
-3. Get the task
-4. Update the task
-5. Delete the task
-
-### Swagger Screenshot
-
-![Swagger UI](docs/swagger.png)
-
----
-
-## Project Structure
-
 ```text
-FL04-task-crud-api/
-├── main.py
-├── requirements.txt
-├── README.md
-└── docs/
-    └── swagger.png
+http://localhost:8000/docs
 ```
 
----
+Click the **Authorize** button.
 
-## Storage
+Enter the access token obtained from:
 
-This API intentionally uses an **in-memory Python list** instead of a database or files.
+```text
+POST /auth/login
+```
 
-This means data exists only while the server is running.
+Swagger will then send the Bearer token automatically when calling protected endpoints.
 
-If the server is restarted, newly created tasks disappear and the three default tasks are restored.
+## Error Handling
 
-This demonstrates the difference between temporary in-memory state and persistent database storage.
+The API uses:
+
+* `400 Bad Request` for invalid request data
+* `401 Unauthorized` for missing, invalid, or expired authentication tokens
+* `404 Not Found` when a requested task does not exist
+* `201 Created` when a task or user is successfully created
+* `204 No Content` for successful logout and task deletion
+
+## Security
+
+Secrets are stored in environment variables and `.env` is excluded through `.gitignore`.
+
+The repository contains only `.env.example` with placeholder values.
+
+Do not publish:
+
+```text
+.env
+```
+
+or real Supabase keys.
+
+## Running Tests Manually
+
+The API can be tested through Swagger UI at:
+
+```text
+http://localhost:8000/docs
+```
+
+Recommended authentication checks:
+
+1. Access a protected endpoint without a token → `401`
+2. Access a protected endpoint with an invalid token → `401`
+3. Login and obtain a valid access token
+4. Authorize Swagger with the token
+5. Access protected endpoints → successful response
+6. Logout using the token → `204`
+
+## Author
+
+Vedang Jaiswal
+
+Bangalore Institute of Technology — Computer Science & Engineering
